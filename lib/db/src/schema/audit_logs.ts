@@ -13,16 +13,6 @@ export const auditLogsTable = pgTable("audit_logs", {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
-export const loginHistoryTable = pgTable("login_history", {
-  id: serial("id").primaryKey(),
-  userId: integer("user_id").notNull(),
-  ip: text("ip").notNull(),
-  country: text("country"),
-  userAgent: text("user_agent").notNull(),
-  status: text("status").notNull().default("success"),
-  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-});
-
 export const insertAuditLogSchema = createInsertSchema(auditLogsTable).omit({ id: true, createdAt: true });
 export type InsertAuditLog = z.infer<typeof insertAuditLogSchema>;
 export type AuditLog = typeof auditLogsTable.$inferSelect;

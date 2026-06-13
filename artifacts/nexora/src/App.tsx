@@ -23,11 +23,15 @@ import TicketNew from "@/pages/client/ticket-new";
 import TicketDetail from "@/pages/client/ticket-detail";
 import Domains from "@/pages/client/domains";
 import DomainSearch from "@/pages/client/domain-search";
+import DomainDNS from "@/pages/client/domain-dns";
 import Profile from "@/pages/client/profile";
 import Security from "@/pages/client/security";
 import Notifications from "@/pages/client/notifications";
 import Affiliate from "@/pages/client/affiliate";
+import AffiliateWithdrawals from "@/pages/client/affiliate-withdrawals";
 import Order from "@/pages/client/order";
+import VPSControl from "@/pages/client/vps-control";
+import MinecraftControl from "@/pages/client/minecraft-control";
 
 import AdminDashboard from "@/pages/admin/dashboard";
 import AdminCustomers from "@/pages/admin/customers";
@@ -38,6 +42,14 @@ import AdminInvoices from "@/pages/admin/invoices";
 import AdminServices from "@/pages/admin/services";
 import AdminStaff from "@/pages/admin/staff";
 import AdminAuditLogs from "@/pages/admin/audit-logs";
+import AdminPaymentGateways from "@/pages/admin/payment-gateways";
+import AdminCategories from "@/pages/admin/categories";
+import AdminSettings from "@/pages/admin/settings";
+import AdminPterodactyl from "@/pages/admin/pterodactyl";
+import AdminProxmox from "@/pages/admin/proxmox";
+import AdminAutomation from "@/pages/admin/automation";
+import AdminLoginHistory from "@/pages/admin/login-history";
+import AdminAffiliateWithdrawals from "@/pages/admin/affiliate-withdrawals";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -72,6 +84,8 @@ function Router() {
       {/* Client Area */}
       <Route path="/dashboard">{() => <PrivateRoute component={Dashboard} />}</Route>
       <Route path="/services">{() => <PrivateRoute component={Services} />}</Route>
+      <Route path="/services/:id/vps">{() => <PrivateRoute component={VPSControl} />}</Route>
+      <Route path="/services/:id/minecraft">{() => <PrivateRoute component={MinecraftControl} />}</Route>
       <Route path="/services/:id">{() => <PrivateRoute component={ServiceDetail} />}</Route>
       <Route path="/billing/invoices">{() => <PrivateRoute component={BillingInvoices} />}</Route>
       <Route path="/billing/invoices/:id">{() => <PrivateRoute component={InvoiceDetail} />}</Route>
@@ -82,10 +96,12 @@ function Router() {
       <Route path="/tickets/:id">{() => <PrivateRoute component={TicketDetail} />}</Route>
       <Route path="/domains">{() => <PrivateRoute component={Domains} />}</Route>
       <Route path="/domains/search">{() => <PrivateRoute component={DomainSearch} />}</Route>
+      <Route path="/domains/:id/dns">{() => <PrivateRoute component={DomainDNS} />}</Route>
       <Route path="/profile">{() => <PrivateRoute component={Profile} />}</Route>
       <Route path="/security">{() => <PrivateRoute component={Security} />}</Route>
       <Route path="/notifications">{() => <PrivateRoute component={Notifications} />}</Route>
       <Route path="/affiliate">{() => <PrivateRoute component={Affiliate} />}</Route>
+      <Route path="/affiliate/withdrawals">{() => <PrivateRoute component={AffiliateWithdrawals} />}</Route>
       <Route path="/order">{() => <PrivateRoute component={Order} />}</Route>
 
       {/* Admin */}
@@ -98,6 +114,14 @@ function Router() {
       <Route path="/admin/services">{() => <PrivateRoute component={AdminServices} adminOnly />}</Route>
       <Route path="/admin/staff">{() => <PrivateRoute component={AdminStaff} adminOnly />}</Route>
       <Route path="/admin/audit-logs">{() => <PrivateRoute component={AdminAuditLogs} adminOnly />}</Route>
+      <Route path="/admin/payment-gateways">{() => <PrivateRoute component={AdminPaymentGateways} adminOnly />}</Route>
+      <Route path="/admin/categories">{() => <PrivateRoute component={AdminCategories} adminOnly />}</Route>
+      <Route path="/admin/settings">{() => <PrivateRoute component={AdminSettings} adminOnly />}</Route>
+      <Route path="/admin/pterodactyl">{() => <PrivateRoute component={AdminPterodactyl} adminOnly />}</Route>
+      <Route path="/admin/proxmox">{() => <PrivateRoute component={AdminProxmox} adminOnly />}</Route>
+      <Route path="/admin/automation">{() => <PrivateRoute component={AdminAutomation} adminOnly />}</Route>
+      <Route path="/admin/login-history">{() => <PrivateRoute component={AdminLoginHistory} adminOnly />}</Route>
+      <Route path="/admin/affiliate-withdrawals">{() => <PrivateRoute component={AdminAffiliateWithdrawals} adminOnly />}</Route>
 
       <Route component={NotFound} />
     </Switch>

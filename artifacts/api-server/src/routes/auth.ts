@@ -1,6 +1,6 @@
 import { Router } from "express";
 import bcrypt from "bcryptjs";
-import { db, usersTable } from "@workspace/db";
+import { db, usersTable, loginHistoryTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import { generateToken, requireAuth } from "../middlewares/auth";
 import { logger } from "../lib/logger";
@@ -31,9 +31,16 @@ router.post("/register", async (req, res) => {
       company: company ?? null,
       referralCode: myReferralCode,
       referredBy: referralCode ?? null,
-      emailVerified: true, // Auto-verify for demo
+      emailVerified: true,
       role: "client",
     }).returning();
+
+    // Send welcome email
+    try {
+      const { sendTemplateEmail } = await import("../lib/mailer");
+      await sendTemplateEmail(user.email, "welcome", { firstName: user.firstName ?? "", panelUrl: "" });
+    } catch {}
+
     const token = generateToken({ id: user.id, email: user.email, role: user.role, firstName: user.firstName, lastName: user.lastName });
     const { passwordHash: _, ...safeUser } = user;
     res.status(201).json({ token, user: { ...safeUser, creditBalance: parseFloat(safeUser.creditBalance ?? "0") } });
@@ -47,6 +54,9 @@ router.post("/register", async (req, res) => {
 router.post("/login", async (req, res) => {
   try {
     const { email, password } = req.body;
+    const ip = (req.headers["x-forwarded-for"] as string)?.split(",")[0] ?? req.socket.remoteAddress ?? "unknown";
+    const ua = req.headers["user-agent"] ?? "";
+
     if (!email || !password) {
       res.status(400).json({ error: "Email and password required" });
       return;
@@ -58,9 +68,15 @@ router.post("/login", async (req, res) => {
     }
     const valid = await bcrypt.compare(password, user.passwordHash);
     if (!valid) {
+      // Record failed login
+      await db.insert(loginHistoryTable).values({ userId: user.id, ipAddress: ip, userAgent: ua, success: false, failReason: "Invalid password" }).catch(() => {});
       res.status(401).json({ error: "Invalid credentials" });
       return;
     }
+
+    // Record successful login
+    await db.insert(loginHistoryTable).values({ userId: user.id, ipAddress: ip, userAgent: ua, success: true }).catch(() => {});
+
     const token = generateToken({ id: user.id, email: user.email, role: user.role, firstName: user.firstName, lastName: user.lastName });
     const { passwordHash: _, ...safeUser } = user;
     res.json({ token, user: { ...safeUser, creditBalance: parseFloat(safeUser.creditBalance ?? "0") } });

@@ -17,18 +17,6 @@ export const domainsTable = pgTable("domains", {
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
 });
 
-export const dnsRecordsTable = pgTable("dns_records", {
-  id: serial("id").primaryKey(),
-  domainId: integer("domain_id").notNull(),
-  type: text("type").notNull(),
-  name: text("name").notNull(),
-  content: text("content").notNull(),
-  ttl: integer("ttl").notNull().default(3600),
-  priority: integer("priority"),
-  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-});
-
 export const insertDomainSchema = createInsertSchema(domainsTable).omit({ id: true, createdAt: true, updatedAt: true });
 export type InsertDomain = z.infer<typeof insertDomainSchema>;
 export type Domain = typeof domainsTable.$inferSelect;
-export type DnsRecord = typeof dnsRecordsTable.$inferSelect;

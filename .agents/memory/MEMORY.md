@@ -1,2 +1,5 @@
 - [NexoraHosting Tailwind v4 dark mode](tailwind-dark-mode.md) — Tailwind v4 rejects `@apply dark`; add `.dark` class via `document.documentElement.classList.add("dark")` in main.tsx instead.
 - [NexoraHosting api-client-react setup](api-client-setup.md) — `setBaseUrl()` and `setAuthTokenGetter()` must be called in main.tsx before hooks are used; token stored in `localStorage` under `nexora_token`.
+- [Drizzle leftJoin with table-level select](drizzle-join-select.md) — passing full table objects (e.g. `{ service: servicesTable }`) in `.select()` with leftJoin causes "Cannot convert undefined or null to object"; use explicit columns or sequential queries.
+- [invoicesTable has no serviceId](invoice-no-serviceid.md) — invoicesTable has no serviceId column; automation suspension logic must link invoices→services via userId, not a direct FK.
+- [Schema duplicate table exports](schema-duplicates.md) — do not define the same table in two schema files; esbuild deduplication causes runtime errors. Keep each table in exactly one file.

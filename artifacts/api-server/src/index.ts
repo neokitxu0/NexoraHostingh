@@ -22,4 +22,9 @@ app.listen(port, (err) => {
   }
 
   logger.info({ port }, "Server listening");
+
+  // Start automation scheduler after server is ready
+  import("./lib/automation").then(({ startAutomationScheduler }) => {
+    startAutomationScheduler();
+  }).catch((e) => logger.error({ e }, "Automation scheduler failed to start"));
 });

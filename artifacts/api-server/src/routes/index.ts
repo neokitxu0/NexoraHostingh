@@ -10,9 +10,19 @@ import domainsRouter from "./domains";
 import kbRouter from "./knowledgebase";
 import notificationsRouter from "./notifications";
 import affiliateRouter from "./affiliate";
+import affiliateWithdrawalsRouter from "./affiliate-withdrawals";
 import apiTokensRouter from "./api-tokens";
 import publicRouter from "./public";
 import adminRouter from "./admin";
+import adminSettingsRouter from "./admin-settings";
+import adminCategoriesRouter from "./admin-categories";
+import adminPaymentGatewaysRouter from "./admin-payment-gateways";
+import adminPterodactylRouter from "./admin-pterodactyl";
+import adminProxmoxRouter from "./admin-proxmox";
+import adminAutomationRouter from "./admin-automation";
+import adminLoginHistoryRouter from "./admin-login-history";
+import clientServerRouter from "./client-server";
+import clientDnsRouter from "./client-dns";
 
 const router: IRouter = Router();
 
@@ -27,8 +37,18 @@ router.use("/domains", domainsRouter);
 router.use("/kb", kbRouter);
 router.use("/notifications", notificationsRouter);
 router.use("/affiliate", affiliateRouter);
+router.use("/affiliate/withdrawals", affiliateWithdrawalsRouter);
 router.use("/api-tokens", apiTokensRouter);
 router.use("/public", publicRouter);
 router.use("/admin", adminRouter);
+router.use("/admin/settings", adminSettingsRouter);
+router.use("/admin/categories", adminCategoriesRouter);
+router.use("/admin/payment-gateways", adminPaymentGatewaysRouter);
+router.use("/admin/pterodactyl", adminPterodactylRouter);
+router.use("/admin/proxmox", adminProxmoxRouter);
+router.use("/admin/automation", adminAutomationRouter);
+router.use("/admin/login-history", adminLoginHistoryRouter);
+router.use("/client/servers", clientServerRouter);
+router.use("/dns", clientDnsRouter);
 
 export default router;
