@@ -1,36 +1,57 @@
-# [Project name]
+# NexoraHosting
 
-_Replace the heading above with the project's name, and this line with one sentence describing what this app does for users._
+A complete WHMCS-style web hosting billing and automation platform with client area, admin panel, billing, support tickets, domain management, affiliate program, and API tokens.
 
 ## Run & Operate
 
-- `pnpm --filter @workspace/api-server run dev` — run the API server (port 5000)
+- `pnpm --filter @workspace/api-server run dev` — run the API server (port 8080)
+- `pnpm --filter @workspace/nexora run dev` — run the frontend (Vite)
 - `pnpm run typecheck` — full typecheck across all packages
 - `pnpm run build` — typecheck + build all packages
 - `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks and Zod schemas from the OpenAPI spec
 - `pnpm --filter @workspace/db run push` — push DB schema changes (dev only)
+- `pnpm --filter @workspace/scripts run seed` — seed database with demo data
 - Required env: `DATABASE_URL` — Postgres connection string
 
 ## Stack
 
 - pnpm workspaces, Node.js 24, TypeScript 5.9
-- API: Express 5
+- Frontend: React + Vite, Tailwind v4, shadcn/ui, TanStack Query, Wouter
+- API: Express 5 at `/api`
 - DB: PostgreSQL + Drizzle ORM
+- Auth: JWT (localStorage `nexora_token`) + bcryptjs
 - Validation: Zod (`zod/v4`), `drizzle-zod`
 - API codegen: Orval (from OpenAPI spec)
 - Build: esbuild (CJS bundle)
 
 ## Where things live
 
-_Populate as you build — short repo map plus pointers to the source-of-truth file for DB schema, API contracts, theme files, etc._
+- `artifacts/nexora/` — React + Vite frontend
+- `artifacts/api-server/` — Express 5 backend
+- `lib/db/` — Drizzle ORM schema + migrations
+- `lib/api-spec/` — OpenAPI spec (source of truth for API contracts)
+- `lib/api-client-react/` — Generated React Query hooks
+- `scripts/src/seed.ts` — Database seed script
 
 ## Architecture decisions
 
-_Populate as you build — non-obvious choices a reader couldn't infer from the code (3-5 bullets)._
+- Contract-first API: OpenAPI spec in `lib/api-spec` → Orval codegen → typed React Query hooks
+- JWT stored in `localStorage` under `nexora_token`; refreshed on mount via `AuthProvider`
+- Admin checks: route guards use `user.role === "admin" || "staff"`
+- Dark mode forced via `document.documentElement.classList.add("dark")` in `main.tsx` (Tailwind v4 does not support `@apply dark`)
+- All API calls go through shared proxy at `/api`; no direct port calls from frontend
 
 ## Product
 
-_Describe the high-level user-facing capabilities of this app once they exist._
+- **Public site**: Home, Pricing (shared/VPS/dedicated/game), Knowledge Base
+- **Auth**: Login, Register
+- **Client Area**: Dashboard, Services (list/detail/order/cancel), Billing (invoices/transactions/credit), Support Tickets (list/new/detail/close), Domains (list/search), Profile, Security (password/API tokens), Notifications, Affiliate Program
+- **Admin Panel**: Dashboard metrics, Customers (list/detail/edit), Products (CRUD), Services (suspend/unsuspend), Tickets, Invoices, Staff management, Audit Logs
+
+## Demo Credentials
+
+- Admin: `admin@nexorahosting.com` / `admin123`
+- Demo client: `demo@example.com` / `demo123`
 
 ## User preferences
 
@@ -38,7 +59,10 @@ _Populate as you build — explicit user instructions worth remembering across s
 
 ## Gotchas
 
-_Populate as you build — sharp edges, "always run X before Y" rules._
+- Tailwind v4: never use `@apply dark;` — add `.dark` class to `document.documentElement` via JavaScript instead
+- Run `pnpm --filter @workspace/api-spec run codegen` after any OpenAPI spec change before using generated hooks
+- `@workspace/api-client-react` must be configured via `setBaseUrl()` and `setAuthTokenGetter()` in `main.tsx` before hooks work
+- bcryptjs is not in the pnpm catalog — use an explicit version number in `scripts/package.json`
 
 ## Pointers
 

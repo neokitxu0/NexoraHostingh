@@ -1,0 +1,2 @@
+- [NexoraHosting Tailwind v4 dark mode](tailwind-dark-mode.md) — Tailwind v4 rejects `@apply dark`; add `.dark` class via `document.documentElement.classList.add("dark")` in main.tsx instead.
+- [NexoraHosting api-client-react setup](api-client-setup.md) — `setBaseUrl()` and `setAuthTokenGetter()` must be called in main.tsx before hooks are used; token stored in `localStorage` under `nexora_token`.
