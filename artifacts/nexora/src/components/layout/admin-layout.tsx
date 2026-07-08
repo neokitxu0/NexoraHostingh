@@ -3,7 +3,7 @@ import { useAuth } from "@/lib/auth";
 import {
   LayoutDashboard, Users, Server, Package, Ticket, FileText,
   Shield, Settings, ClipboardList, LogOut, ChevronLeft, Menu, X,
-  CreditCard, Tag, Cpu, Zap, History, DollarSign, Bot, ChevronDown, ChevronRight
+  CreditCard, Tag, Cpu, Zap, History, DollarSign, Bot, ChevronDown, ChevronRight, BookOpen
 } from "lucide-react";
 import { useState } from "react";
 import { useLogout } from "@workspace/api-client-react";
@@ -42,6 +42,7 @@ const adminNav: NavItem[] = [
   { href: "/admin/staff", icon: Shield, label: "Staff" },
   { href: "/admin/login-history", icon: History, label: "Login History" },
   { href: "/admin/audit-logs", icon: ClipboardList, label: "Audit Logs" },
+  { href: "/admin/terms", icon: BookOpen, label: "Pages" },
   { href: "/admin/settings", icon: Settings, label: "Settings" },
 ];
 

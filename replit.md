@@ -50,8 +50,14 @@ A complete WHMCS-style web hosting billing and automation platform with client a
 
 ## Demo Credentials
 
-- Admin: `admin@nexorahosting.com` / `admin123`
+- Admin: Set via `ADMIN_EMAIL` + `ADMIN_PASSWORD` env vars (default fallback: `admin@nexorahosting.com` / `NexoraAdmin@2026!`)
 - Demo client: `demo@example.com` / `demo123`
+
+To set real admin credentials before going live:
+1. Open Replit Secrets / Environment Variables
+2. Set `ADMIN_EMAIL` = your real admin email
+3. Set `ADMIN_PASSWORD` = a strong password
+4. Run `pnpm --filter @workspace/scripts run seed` to create the admin account
 
 ## User preferences
 

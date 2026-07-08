@@ -7,9 +7,14 @@ import bcrypt from "bcryptjs";
 async function seed() {
   console.log("🌱 Seeding database…");
 
-  const adminHash = await bcrypt.hash("admin123", 12);
+  const adminEmail = process.env.ADMIN_EMAIL || "admin@nexorahosting.com";
+  const adminPassword = process.env.ADMIN_PASSWORD || "NexoraAdmin@2026!";
+  if (!process.env.ADMIN_PASSWORD) {
+    console.warn("⚠️  ADMIN_PASSWORD env var not set — using default. Set ADMIN_EMAIL + ADMIN_PASSWORD before going live!");
+  }
+  const adminHash = await bcrypt.hash(adminPassword, 12);
   const [admin] = await db.insert(usersTable).values({
-    email: "admin@nexorahosting.com",
+    email: adminEmail,
     passwordHash: adminHash,
     firstName: "Nexora",
     lastName: "Admin",
@@ -18,7 +23,7 @@ async function seed() {
     status: "active",
     referralCode: "NEXORA-ADMIN",
   }).onConflictDoNothing().returning();
-  console.log("✅ Admin:", admin ? "created" : "already exists");
+  console.log(`✅ Admin (${adminEmail}):`, admin ? "created" : "already exists");
 
   const clientHash = await bcrypt.hash("demo123", 12);
   const [client] = await db.insert(usersTable).values({

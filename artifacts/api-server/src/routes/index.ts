@@ -24,6 +24,8 @@ import adminLoginHistoryRouter from "./admin-login-history";
 import clientServerRouter from "./client-server";
 import clientDnsRouter from "./client-dns";
 import licenseRouter from "./license";
+import adminPagesRouter from "./admin-pages";
+import razorpayRouter from "./razorpay";
 
 const router: IRouter = Router();
 
@@ -52,5 +54,7 @@ router.use("/admin/login-history", adminLoginHistoryRouter);
 router.use("/client/servers", clientServerRouter);
 router.use("/dns", clientDnsRouter);
 router.use("/lic", licenseRouter);
+router.use("/admin/pages", adminPagesRouter);
+router.use("/razorpay", razorpayRouter);
 
 export default router;

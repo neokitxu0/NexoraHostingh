@@ -117,7 +117,7 @@ export default function Login() {
         </div>
 
         <p className="text-center text-xs text-muted-foreground mt-6">
-          Demo: <code className="text-primary">admin@nexorahosting.com</code> / <code className="text-primary">admin123</code>
+          Demo client: <code className="text-primary">demo@example.com</code> / <code className="text-primary">demo123</code>
         </p>
       </div>
     </div>

@@ -3,3 +3,6 @@
 - [Drizzle leftJoin with table-level select](drizzle-join-select.md) — passing full table objects (e.g. `{ service: servicesTable }`) in `.select()` with leftJoin causes "Cannot convert undefined or null to object"; use explicit columns or sequential queries.
 - [invoicesTable has no serviceId](invoice-no-serviceid.md) — invoicesTable has no serviceId column; automation suspension logic must link invoices→services via userId, not a direct FK.
 - [Schema duplicate table exports](schema-duplicates.md) — do not define the same table in two schema files; esbuild deduplication causes runtime errors. Keep each table in exactly one file.
+- [INR currency + Razorpay setup](inr-razorpay.md) — platform uses ₹ (INR); Razorpay keys stored in settingsTable (razorpay_key_id, razorpay_key_secret); admin sets them at /admin/settings → Payments tab.
+- [Game hosting subcategory flow](game-subcategory.md) — products table has subcategory + hardware_type columns; order page uses 3-step flow: game picker → AMD EPYC/Ryzen hardware → plans filtered via /api/public/plans?type=game&subcategory=X&hardware=Y.
+- [Admin credentials via env vars](admin-env-credentials.md) — seed.ts reads ADMIN_EMAIL / ADMIN_PASSWORD env vars; default fallback is NexoraAdmin@2026!; do NOT hardcode real credentials in code.

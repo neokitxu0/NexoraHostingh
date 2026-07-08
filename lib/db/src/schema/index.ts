@@ -20,3 +20,4 @@ export * from "./dns_records";
 export * from "./automation_jobs";
 export * from "./email_templates";
 export * from "./license";
+export * from "./pages";

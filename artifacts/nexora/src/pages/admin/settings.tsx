@@ -10,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import { Save, Mail, MessageSquare, Palette, Building2, FileText, Percent, DollarSign, RefreshCw, CheckCircle } from "lucide-react";
+import { Save, Mail, MessageSquare, Palette, Building2, FileText, Percent, DollarSign, RefreshCw, CreditCard, IndianRupee } from "lucide-react";
 
 type Settings = Record<string, string>;
 
@@ -48,6 +48,7 @@ export default function AdminSettings() {
   const [testEmail, setTestEmail] = useState("");
   const [testing, setTesting] = useState(false);
   const [discordTesting, setDiscordTesting] = useState(false);
+  const [razorpayTesting, setRazorpayTesting] = useState(false);
 
   const { data, isLoading } = useQuery<Settings>({
     queryKey: ["admin-settings"],
@@ -67,7 +68,7 @@ export default function AdminSettings() {
   const testSmtp = async () => {
     setTesting(true);
     try {
-      const res = await apiFetch("/admin/settings/test-smtp", { method: "POST", body: JSON.stringify({ to: testEmail }) });
+      await apiFetch("/admin/settings/test-smtp", { method: "POST", body: JSON.stringify({ to: testEmail }) });
       toast({ title: "Test email sent!", description: `Sent to ${testEmail}` });
     } catch (e: any) {
       toast({ title: "SMTP test failed", description: e.message, variant: "destructive" });
@@ -82,6 +83,20 @@ export default function AdminSettings() {
     } catch (e: any) {
       toast({ title: "Discord test failed", description: e.message, variant: "destructive" });
     } finally { setDiscordTesting(false); }
+  };
+
+  const testRazorpay = async () => {
+    setRazorpayTesting(true);
+    try {
+      const { keyId } = await apiFetch<any>("/razorpay/key");
+      if (keyId) {
+        toast({ title: "Razorpay configured ✓", description: `Key ID: ${keyId.slice(0, 12)}...` });
+      } else {
+        toast({ title: "Razorpay not configured", description: "Please enter your Key ID and Key Secret.", variant: "destructive" });
+      }
+    } catch (e: any) {
+      toast({ title: "Test failed", description: e.message, variant: "destructive" });
+    } finally { setRazorpayTesting(false); }
   };
 
   if (isLoading) return <AdminLayout><div className="flex items-center justify-center h-64"><RefreshCw className="h-6 w-6 animate-spin text-muted-foreground" /></div></AdminLayout>;
@@ -105,22 +120,23 @@ export default function AdminSettings() {
             <TabsTrigger value="company"><Building2 className="h-3.5 w-3.5 mr-1.5" />Company</TabsTrigger>
             <TabsTrigger value="smtp"><Mail className="h-3.5 w-3.5 mr-1.5" />SMTP</TabsTrigger>
             <TabsTrigger value="discord"><MessageSquare className="h-3.5 w-3.5 mr-1.5" />Discord</TabsTrigger>
+            <TabsTrigger value="payments"><CreditCard className="h-3.5 w-3.5 mr-1.5" />Payments</TabsTrigger>
             <TabsTrigger value="branding"><Palette className="h-3.5 w-3.5 mr-1.5" />Branding</TabsTrigger>
             <TabsTrigger value="invoice"><FileText className="h-3.5 w-3.5 mr-1.5" />Invoice</TabsTrigger>
             <TabsTrigger value="tax"><Percent className="h-3.5 w-3.5 mr-1.5" />Tax</TabsTrigger>
-            <TabsTrigger value="currency"><DollarSign className="h-3.5 w-3.5 mr-1.5" />Currency</TabsTrigger>
+            <TabsTrigger value="currency"><IndianRupee className="h-3.5 w-3.5 mr-1.5" />Currency</TabsTrigger>
           </TabsList>
 
           <TabsContent value="company" className="mt-4">
             <Card><CardHeader><CardTitle>Company Information</CardTitle><CardDescription>Your business details shown on invoices and emails</CardDescription></CardHeader>
               <CardContent>
                 <SettingsSection title="" fields={[
-                  { key: "company_name", label: "Company Name", placeholder: "NexoraHosting Ltd" },
+                  { key: "company_name", label: "Company Name", placeholder: "NexoraHosting Pvt Ltd" },
                   { key: "company_email", label: "Support Email", placeholder: "support@nexorahosting.com" },
-                  { key: "company_phone", label: "Phone Number", placeholder: "+1 234 567 8900" },
-                  { key: "company_address", label: "Address", type: "textarea", placeholder: "123 Server Street, Cloud City, CC 00000" },
+                  { key: "company_phone", label: "Phone Number", placeholder: "+91 98765 43210" },
+                  { key: "company_address", label: "Address", type: "textarea", placeholder: "123, Server Street, Mumbai, Maharashtra 400001" },
                   { key: "company_website", label: "Website URL", placeholder: "https://nexorahosting.com" },
-                  { key: "company_vat_number", label: "VAT/Tax ID", placeholder: "GB123456789" },
+                  { key: "company_gst_number", label: "GST Number", placeholder: "22AAAAA0000A1Z5" },
                 ]} values={settings} onChange={set} />
               </CardContent>
             </Card>
@@ -181,6 +197,38 @@ export default function AdminSettings() {
             </Card>
           </TabsContent>
 
+          <TabsContent value="payments" className="mt-4">
+            <div className="space-y-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <span className="text-xl">🇮🇳</span> Razorpay
+                  </CardTitle>
+                  <CardDescription>Accept payments via UPI, Cards, Net Banking, and Wallets in India</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  <div className="rounded-lg border border-primary/20 bg-primary/5 p-4 text-sm space-y-1">
+                    <p className="font-medium">Setup Instructions</p>
+                    <ol className="text-muted-foreground space-y-1 list-decimal list-inside text-xs">
+                      <li>Create a free account at <strong>razorpay.com</strong></li>
+                      <li>Go to Settings → API Keys → Generate Key</li>
+                      <li>Copy your Key ID and Key Secret below</li>
+                      <li>Save settings and test the connection</li>
+                    </ol>
+                  </div>
+                  <SettingsSection title="" fields={[
+                    { key: "razorpay_key_id", label: "Key ID (Public)", placeholder: "rzp_live_xxxxxxxxxxxx", hint: "Your Razorpay public Key ID — starts with rzp_live_ or rzp_test_" },
+                    { key: "razorpay_key_secret", label: "Key Secret (Private)", type: "password", placeholder: "Your Razorpay secret key", hint: "Never share this. Stored securely on the server." },
+                  ]} values={settings} onChange={set} />
+                  <Button variant="outline" onClick={testRazorpay} disabled={razorpayTesting}>
+                    {razorpayTesting ? <RefreshCw className="h-4 w-4 animate-spin mr-2" /> : <CreditCard className="h-4 w-4 mr-2" />}
+                    Test Razorpay Connection
+                  </Button>
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+
           <TabsContent value="branding" className="mt-4">
             <Card><CardHeader><CardTitle>Branding & Theme</CardTitle><CardDescription>Customize the platform's look and feel</CardDescription></CardHeader>
               <CardContent>
@@ -191,7 +239,7 @@ export default function AdminSettings() {
                   { key: "brand_primary_color", label: "Primary Color (hex)", placeholder: "#6366f1" },
                   { key: "brand_accent_color", label: "Accent Color (hex)", placeholder: "#a855f7" },
                   { key: "brand_support_url", label: "Support URL", placeholder: "https://nexorahosting.com/support" },
-                  { key: "brand_tos_url", label: "Terms of Service URL", placeholder: "https://nexorahosting.com/tos" },
+                  { key: "brand_tos_url", label: "Terms of Service URL", placeholder: "https://nexorahosting.com/terms" },
                   { key: "brand_privacy_url", label: "Privacy Policy URL", placeholder: "https://nexorahosting.com/privacy" },
                 ]} values={settings} onChange={set} />
               </CardContent>
@@ -202,36 +250,35 @@ export default function AdminSettings() {
             <Card><CardHeader><CardTitle>Invoice Settings</CardTitle><CardDescription>Configure invoice generation and numbering</CardDescription></CardHeader>
               <CardContent>
                 <SettingsSection title="" fields={[
-                  { key: "invoice_prefix", label: "Invoice Number Prefix", placeholder: "INV-", hint: "e.g. INV-2024-001" },
+                  { key: "invoice_prefix", label: "Invoice Number Prefix", placeholder: "INV-", hint: "e.g. INV-2026-001" },
                   { key: "invoice_due_days", label: "Payment Due Days", placeholder: "7", hint: "Days after invoice creation before it's overdue" },
-                  { key: "invoice_currency_symbol", label: "Currency Symbol", placeholder: "$" },
-                  { key: "invoice_footer", label: "Invoice Footer Text", type: "textarea", placeholder: "Thank you for your business!" },
-                  { key: "invoice_terms", label: "Payment Terms", type: "textarea", placeholder: "Payment due within 7 days of invoice date." },
+                  { key: "invoice_footer", label: "Invoice Footer Text", type: "textarea", placeholder: "Thank you for choosing NexoraHosting!" },
+                  { key: "invoice_terms", label: "Payment Terms", type: "textarea", placeholder: "Payment due within 7 days. GST applicable as per Indian law." },
                 ]} values={settings} onChange={set} />
               </CardContent>
             </Card>
           </TabsContent>
 
           <TabsContent value="tax" className="mt-4">
-            <Card><CardHeader><CardTitle>Tax Settings</CardTitle><CardDescription>Configure tax rates applied to invoices</CardDescription></CardHeader>
+            <Card><CardHeader><CardTitle>GST / Tax Settings</CardTitle><CardDescription>Configure GST rates applied to invoices (India)</CardDescription></CardHeader>
               <CardContent>
                 <SettingsSection title="" fields={[
-                  { key: "tax_enabled", label: "Enable Tax", type: "text", placeholder: "true or false" },
-                  { key: "tax_rate", label: "Tax Rate (%)", placeholder: "20", hint: "VAT/GST/Sales Tax percentage" },
-                  { key: "tax_name", label: "Tax Name", placeholder: "VAT" },
-                  { key: "tax_number", label: "Tax Registration Number", placeholder: "GB123456789" },
-                  { key: "tax_country", label: "Country Code", placeholder: "GB", hint: "ISO 2-letter country code for tax applicability" },
+                  { key: "tax_enabled", label: "Enable GST", type: "text", placeholder: "true", hint: "Set to true or false" },
+                  { key: "tax_rate", label: "GST Rate (%)", placeholder: "18", hint: "Standard GST for hosting services in India is 18%" },
+                  { key: "tax_name", label: "Tax Name", placeholder: "GST" },
+                  { key: "tax_number", label: "GSTIN Number", placeholder: "22AAAAA0000A1Z5" },
+                  { key: "tax_country", label: "Country Code", placeholder: "IN" },
                 ]} values={settings} onChange={set} />
               </CardContent>
             </Card>
           </TabsContent>
 
           <TabsContent value="currency" className="mt-4">
-            <Card><CardHeader><CardTitle>Currency Settings</CardTitle><CardDescription>Set the default currency for the platform</CardDescription></CardHeader>
+            <Card><CardHeader><CardTitle>Currency Settings</CardTitle><CardDescription>Set Indian Rupee as default currency</CardDescription></CardHeader>
               <CardContent>
                 <SettingsSection title="" fields={[
-                  { key: "currency_code", label: "Currency Code", placeholder: "USD", hint: "ISO 4217 code, e.g. USD, EUR, GBP" },
-                  { key: "currency_symbol", label: "Currency Symbol", placeholder: "$" },
+                  { key: "currency_code", label: "Currency Code", placeholder: "INR", hint: "ISO 4217 code" },
+                  { key: "currency_symbol", label: "Currency Symbol", placeholder: "₹" },
                   { key: "currency_position", label: "Symbol Position", placeholder: "before", hint: "before or after the amount" },
                   { key: "currency_decimals", label: "Decimal Places", placeholder: "2" },
                   { key: "currency_thousands_sep", label: "Thousands Separator", placeholder: "," },

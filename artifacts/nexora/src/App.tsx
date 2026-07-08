@@ -50,6 +50,7 @@ import AdminProxmox from "@/pages/admin/proxmox";
 import AdminAutomation from "@/pages/admin/automation";
 import AdminLoginHistory from "@/pages/admin/login-history";
 import AdminAffiliateWithdrawals from "@/pages/admin/affiliate-withdrawals";
+import AdminTerms from "@/pages/admin/terms";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -122,6 +123,7 @@ function Router() {
       <Route path="/admin/automation">{() => <PrivateRoute component={AdminAutomation} adminOnly />}</Route>
       <Route path="/admin/login-history">{() => <PrivateRoute component={AdminLoginHistory} adminOnly />}</Route>
       <Route path="/admin/affiliate-withdrawals">{() => <PrivateRoute component={AdminAffiliateWithdrawals} adminOnly />}</Route>
+      <Route path="/admin/terms">{() => <PrivateRoute component={AdminTerms} adminOnly />}</Route>
 
       <Route component={NotFound} />
     </Switch>

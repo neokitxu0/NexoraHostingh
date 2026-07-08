@@ -1,11 +1,12 @@
 import { ClientLayout } from "@/components/layout/client-layout";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
 import { apiFetch } from "@/lib/api";
 import { useQuery } from "@tanstack/react-query";
-import { FileText, Download, ArrowRight } from "lucide-react";
+import { FileText, ArrowRight } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { motion } from "framer-motion";
 
 function StatusPill({ s }: { s: string }) {
   const map: Record<string, string> = {
@@ -26,7 +27,7 @@ export default function BillingInvoices() {
 
   return (
     <ClientLayout>
-      <div className="space-y-6">
+      <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
         <div>
           <h1 className="text-2xl font-bold">Invoices</h1>
           <p className="text-muted-foreground text-sm mt-1">View and pay your billing invoices</p>
@@ -51,22 +52,32 @@ export default function BillingInvoices() {
                   <span>Amount</span>
                   <span>Status</span>
                 </div>
-                {invoices?.map((inv: any) => (
-                  <Link key={inv.id} href={`/billing/invoices/${inv.id}`}>
-                    <div className="grid grid-cols-5 gap-4 px-5 py-4 hover:bg-muted/30 transition-colors cursor-pointer items-center" data-testid={`invoice-row-${inv.id}`}>
-                      <span className="text-sm font-medium text-primary">{inv.number}</span>
-                      <span className="text-sm text-muted-foreground">{new Date(inv.createdAt).toLocaleDateString()}</span>
-                      <span className="text-sm text-muted-foreground">{inv.dueDate}</span>
-                      <span className="text-sm font-semibold">${inv.total?.toFixed(2)}</span>
-                      <StatusPill s={inv.status} />
-                    </div>
-                  </Link>
+                {invoices?.map((inv: any, i: number) => (
+                  <motion.div
+                    key={inv.id}
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: i * 0.04 }}
+                  >
+                    <Link href={`/billing/invoices/${inv.id}`}>
+                      <div className="grid grid-cols-5 gap-4 px-5 py-4 hover:bg-muted/30 transition-colors cursor-pointer items-center group" data-testid={`invoice-row-${inv.id}`}>
+                        <span className="text-sm font-medium text-primary group-hover:underline">{inv.number}</span>
+                        <span className="text-sm text-muted-foreground">{new Date(inv.createdAt).toLocaleDateString("en-IN")}</span>
+                        <span className="text-sm text-muted-foreground">{inv.dueDate}</span>
+                        <span className="text-sm font-semibold">₹{inv.total?.toFixed(2)}</span>
+                        <div className="flex items-center justify-between">
+                          <StatusPill s={inv.status} />
+                          <ArrowRight className="h-3.5 w-3.5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+                        </div>
+                      </div>
+                    </Link>
+                  </motion.div>
                 ))}
               </div>
             )}
           </CardContent>
         </Card>
-      </div>
+      </motion.div>
     </ClientLayout>
   );
 }

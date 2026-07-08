@@ -11,6 +11,7 @@ import {
   Clock, CheckCircle2, AlertCircle, TrendingUp, Plus
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { motion } from "framer-motion";
 
 function StatusBadge({ status }: { status: string }) {
   const map: Record<string, string> = {
@@ -39,17 +40,17 @@ export default function Dashboard() {
   });
 
   const stats = [
-    { label: "Active Services", value: dash?.activeServices ?? 0, icon: Server, color: "text-primary", bg: "bg-primary/10" },
-    { label: "Open Tickets", value: dash?.openTickets ?? 0, icon: Ticket, color: "text-accent", bg: "bg-accent/10" },
-    { label: "Unpaid Invoices", value: dash?.pendingInvoices ?? 0, icon: FileText, color: "text-yellow-400", bg: "bg-yellow-400/10" },
-    { label: "Credit Balance", value: `$${(dash?.creditBalance ?? 0).toFixed(2)}`, icon: Wallet, color: "text-green-400", bg: "bg-green-400/10" },
+    { label: "Active Services", value: dash?.activeServices ?? 0, icon: Server, color: "text-primary", bg: "bg-primary/10", border: "border-primary/20" },
+    { label: "Open Tickets", value: dash?.openTickets ?? 0, icon: Ticket, color: "text-accent", bg: "bg-accent/10", border: "border-accent/20" },
+    { label: "Unpaid Invoices", value: dash?.pendingInvoices ?? 0, icon: FileText, color: "text-yellow-400", bg: "bg-yellow-400/10", border: "border-yellow-400/20" },
+    { label: "Credit Balance", value: `₹${(dash?.creditBalance ?? 0).toFixed(2)}`, icon: Wallet, color: "text-green-400", bg: "bg-green-400/10", border: "border-green-400/20" },
   ];
 
   return (
     <ClientLayout>
       <div className="space-y-6">
         {/* Header */}
-        <div className="flex items-center justify-between">
+        <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold">
               Welcome back, {user?.firstName}! 👋
@@ -62,124 +63,145 @@ export default function Dashboard() {
               Order New Service
             </Button>
           </Link>
-        </div>
+        </motion.div>
 
         {/* Stats Grid */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          {stats.map((stat) => (
-            <Card key={stat.label} className="border-card-border">
-              <CardContent className="p-5">
-                <div className="flex items-center justify-between mb-3">
-                  <div className={`w-9 h-9 rounded-lg ${stat.bg} flex items-center justify-center`}>
-                    <stat.icon className={`h-5 w-5 ${stat.color}`} />
+          {stats.map((stat, index) => (
+            <motion.div
+              key={stat.label}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4, delay: index * 0.08 }}
+            >
+              <Card className={`border-card-border hover:border-primary/30 transition-all hover:shadow-lg hover:shadow-primary/5`}>
+                <CardContent className="p-5">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className={`w-9 h-9 rounded-lg ${stat.bg} border ${stat.border} flex items-center justify-center`}>
+                      <stat.icon className={`h-5 w-5 ${stat.color}`} />
+                    </div>
                   </div>
-                </div>
-                {isLoading ? (
-                  <Skeleton className="h-7 w-16 mb-1" />
-                ) : (
-                  <p className="text-2xl font-bold">{stat.value}</p>
-                )}
-                <p className="text-xs text-muted-foreground mt-1">{stat.label}</p>
-              </CardContent>
-            </Card>
+                  {isLoading ? (
+                    <Skeleton className="h-7 w-16 mb-1" />
+                  ) : (
+                    <p className="text-2xl font-bold">{stat.value}</p>
+                  )}
+                  <p className="text-xs text-muted-foreground mt-0.5">{stat.label}</p>
+                </CardContent>
+              </Card>
+            </motion.div>
           ))}
         </div>
 
-        {/* Recent Invoices + Tickets */}
         <div className="grid lg:grid-cols-2 gap-6">
-          <Card className="border-card-border">
-            <CardHeader className="flex flex-row items-center justify-between pb-3">
-              <CardTitle className="text-base font-semibold">Recent Invoices</CardTitle>
-              <Link href="/billing/invoices">
-                <Button variant="ghost" size="sm" className="text-xs">
-                  View all <ArrowRight className="h-3 w-3 ml-1" />
-                </Button>
-              </Link>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {isLoading ? (
-                Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-12" />)
-              ) : (dash?.recentInvoices?.length ?? 0) === 0 ? (
-                <div className="text-center py-8 text-muted-foreground text-sm">
-                  <FileText className="h-8 w-8 mx-auto mb-2 opacity-30" />
-                  No invoices yet
-                </div>
-              ) : (
-                dash?.recentInvoices?.map((inv: any) => (
-                  <Link key={inv.id} href={`/billing/invoices/${inv.id}`}>
-                    <div className="flex items-center justify-between p-3 rounded-lg hover:bg-muted/50 transition-colors cursor-pointer">
-                      <div>
-                        <p className="text-sm font-medium">{inv.number}</p>
-                        <p className="text-xs text-muted-foreground">Due {inv.dueDate}</p>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <span className="text-sm font-semibold">${inv.total?.toFixed(2)}</span>
-                        <StatusBadge status={inv.status} />
-                      </div>
-                    </div>
+          {/* Recent Services */}
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
+            <Card className="border-card-border h-full">
+              <CardHeader className="pb-3">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <Server className="h-4 w-4 text-primary" /> Services
+                  </CardTitle>
+                  <Link href="/services">
+                    <Button variant="ghost" size="sm" className="text-xs h-7">View all <ArrowRight className="h-3 w-3 ml-1" /></Button>
                   </Link>
-                ))
-              )}
-            </CardContent>
-          </Card>
-
-          <Card className="border-card-border">
-            <CardHeader className="flex flex-row items-center justify-between pb-3">
-              <CardTitle className="text-base font-semibold">Recent Tickets</CardTitle>
-              <Link href="/tickets">
-                <Button variant="ghost" size="sm" className="text-xs">
-                  View all <ArrowRight className="h-3 w-3 ml-1" />
-                </Button>
-              </Link>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {isLoading ? (
-                Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-12" />)
-              ) : (dash?.recentTickets?.length ?? 0) === 0 ? (
-                <div className="text-center py-8 text-muted-foreground text-sm">
-                  <Ticket className="h-8 w-8 mx-auto mb-2 opacity-30" />
-                  No support tickets yet
                 </div>
-              ) : (
-                dash?.recentTickets?.map((t: any) => (
+              </CardHeader>
+              <CardContent className="space-y-2">
+                {isLoading ? Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-12" />) :
+                  (dash?.recentServices?.length ?? 0) === 0 ? (
+                    <div className="text-center py-8">
+                      <Server className="h-8 w-8 text-muted-foreground/30 mx-auto mb-2" />
+                      <p className="text-sm text-muted-foreground">No services yet</p>
+                      <Link href="/order"><Button size="sm" variant="outline" className="mt-2 text-xs">Order now</Button></Link>
+                    </div>
+                  ) : dash?.recentServices?.map((s: any) => (
+                    <Link key={s.id} href={`/services/${s.id}`}>
+                      <div className="flex items-center justify-between p-3 rounded-lg hover:bg-muted/30 transition-colors cursor-pointer group">
+                        <div>
+                          <p className="text-sm font-medium group-hover:text-primary transition-colors">{s.productName}</p>
+                          <p className="text-xs text-muted-foreground">{s.domain ?? s.ipAddress ?? "—"}</p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <StatusBadge status={s.status} />
+                          <span className="text-xs font-medium">₹{parseFloat(s.price).toFixed(2)}/mo</span>
+                        </div>
+                      </div>
+                    </Link>
+                  ))}
+              </CardContent>
+            </Card>
+          </motion.div>
+
+          {/* Recent Invoices */}
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}>
+            <Card className="border-card-border h-full">
+              <CardHeader className="pb-3">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <FileText className="h-4 w-4 text-primary" /> Recent Invoices
+                  </CardTitle>
+                  <Link href="/billing/invoices">
+                    <Button variant="ghost" size="sm" className="text-xs h-7">View all <ArrowRight className="h-3 w-3 ml-1" /></Button>
+                  </Link>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                {isLoading ? Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-12" />) :
+                  (dash?.recentInvoices?.length ?? 0) === 0 ? (
+                    <div className="text-center py-8">
+                      <FileText className="h-8 w-8 text-muted-foreground/30 mx-auto mb-2" />
+                      <p className="text-sm text-muted-foreground">No invoices yet</p>
+                    </div>
+                  ) : dash?.recentInvoices?.map((inv: any) => (
+                    <Link key={inv.id} href={`/billing/invoices/${inv.id}`}>
+                      <div className="flex items-center justify-between p-3 rounded-lg hover:bg-muted/30 transition-colors cursor-pointer group">
+                        <div>
+                          <p className="text-sm font-medium text-primary group-hover:underline">{inv.number}</p>
+                          <p className="text-xs text-muted-foreground">{new Date(inv.createdAt).toLocaleDateString("en-IN")}</p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <StatusBadge status={inv.status} />
+                          <span className="text-xs font-medium">₹{parseFloat(inv.total).toFixed(2)}</span>
+                        </div>
+                      </div>
+                    </Link>
+                  ))}
+              </CardContent>
+            </Card>
+          </motion.div>
+        </div>
+
+        {/* Recent Tickets */}
+        {(dash?.recentTickets?.length ?? 0) > 0 && (
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}>
+            <Card className="border-card-border">
+              <CardHeader className="pb-3">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <Ticket className="h-4 w-4 text-primary" /> Support Tickets
+                  </CardTitle>
+                  <Link href="/tickets">
+                    <Button variant="ghost" size="sm" className="text-xs h-7">View all <ArrowRight className="h-3 w-3 ml-1" /></Button>
+                  </Link>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                {dash?.recentTickets?.map((t: any) => (
                   <Link key={t.id} href={`/tickets/${t.id}`}>
-                    <div className="flex items-center justify-between p-3 rounded-lg hover:bg-muted/50 transition-colors cursor-pointer">
+                    <div className="flex items-center justify-between p-3 rounded-lg hover:bg-muted/30 transition-colors cursor-pointer group">
                       <div>
-                        <p className="text-sm font-medium truncate max-w-[200px]">{t.subject}</p>
-                        <p className="text-xs text-muted-foreground capitalize">{t.category} · {t.priority}</p>
+                        <p className="text-sm font-medium group-hover:text-primary transition-colors">{t.subject}</p>
+                        <p className="text-xs text-muted-foreground">{new Date(t.createdAt).toLocaleDateString("en-IN")}</p>
                       </div>
                       <StatusBadge status={t.status} />
                     </div>
                   </Link>
-                ))
-              )}
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Quick actions */}
-        <Card className="border-card-border bg-gradient-to-r from-primary/5 to-accent/5">
-          <CardContent className="p-6">
-            <h3 className="font-semibold mb-4">Quick Actions</h3>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              {[
-                { href: "/order", label: "New Service", icon: Plus },
-                { href: "/tickets/new", label: "Open Ticket", icon: Ticket },
-                { href: "/billing/credit", label: "Add Credit", icon: Wallet },
-                { href: "/domains/search", label: "Find Domain", icon: Server },
-              ].map(action => (
-                <Link key={action.href} href={action.href}>
-                  <div className="flex flex-col items-center gap-2 p-4 rounded-xl bg-card/60 border border-card-border hover:border-primary/40 hover:bg-primary/5 transition-all cursor-pointer text-center">
-                    <div className="w-9 h-9 rounded-lg bg-primary/15 flex items-center justify-center">
-                      <action.icon className="h-4 w-4 text-primary" />
-                    </div>
-                    <span className="text-xs font-medium">{action.label}</span>
-                  </div>
-                </Link>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+                ))}
+              </CardContent>
+            </Card>
+          </motion.div>
+        )}
       </div>
     </ClientLayout>
   );

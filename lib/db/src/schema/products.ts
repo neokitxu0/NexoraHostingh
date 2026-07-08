@@ -26,6 +26,8 @@ export const productsTable = pgTable("products", {
   autoProvision: boolean("auto_provision").notNull().default(false),
   provisionModule: text("provision_module"),
   provisionConfigJson: text("provision_config_json").notNull().default("{}"),
+  subcategory: text("subcategory"),
+  hardwareType: text("hardware_type"),
   sortOrder: integer("sort_order").notNull().default(0),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
