@@ -27,6 +27,7 @@ export const usersTable = pgTable("users", {
   creditBalance: numeric("credit_balance", { precision: 10, scale: 2 }).notNull().default("0"),
   referralCode: text("referral_code").unique(),
   referredBy: text("referred_by"),
+  discordUserId: text("discord_user_id"),
   status: text("status").notNull().default("active"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),

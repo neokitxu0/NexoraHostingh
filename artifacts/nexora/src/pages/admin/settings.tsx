@@ -152,10 +152,11 @@ export default function AdminSettings() {
           </TabsContent>
 
           <TabsContent value="discord" className="mt-4">
-            <Card><CardHeader><CardTitle>Discord Notifications</CardTitle><CardDescription>Get real-time alerts in your Discord server</CardDescription></CardHeader>
+            <Card><CardHeader><CardTitle>Discord Notifications</CardTitle><CardDescription>Get real-time alerts and send DMs via your Discord bot</CardDescription></CardHeader>
               <CardContent className="space-y-6">
                 <SettingsSection title="" fields={[
                   { key: "discord_webhook_url", label: "Webhook URL", placeholder: "https://discord.com/api/webhooks/...", hint: "Create a webhook in your Discord server settings → Integrations → Webhooks" },
+                  { key: "discord_bot_token", label: "Bot Token", type: "password", placeholder: "Bot token from Discord Developer Portal", hint: "Required to DM users when their server is provisioned. Enable Server Members Intent in your bot settings." },
                 ]} values={settings} onChange={set} />
                 <div className="space-y-3">
                   <Label>Notification Events</Label>

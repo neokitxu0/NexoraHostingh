@@ -91,7 +91,7 @@ router.post("/:id/cancel", requireAuth, async (req, res) => {
 // POST /api/services/order
 router.post("/order", requireAuth, async (req, res) => {
   try {
-    const { productId, billingCycle, domain, couponCode, paymentMethod } = req.body;
+    const { productId, billingCycle, domain, couponCode, paymentMethod, serverName, serverDesc } = req.body;
     const [product] = await db.select().from(productsTable).where(eq(productsTable.id, productId));
     if (!product) { res.status(404).json({ error: "Product not found" }); return; }
 
@@ -106,6 +106,8 @@ router.post("/order", requireAuth, async (req, res) => {
       productId,
       status: "pending",
       domain: domain ?? null,
+      serverName: serverName ?? null,
+      serverDesc: serverDesc ?? null,
       billingCycle,
       price: product.price,
       nextDueDate: dueDate.toISOString().split("T")[0],

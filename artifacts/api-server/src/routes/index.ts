@@ -23,6 +23,7 @@ import adminAutomationRouter from "./admin-automation";
 import adminLoginHistoryRouter from "./admin-login-history";
 import clientServerRouter from "./client-server";
 import clientDnsRouter from "./client-dns";
+import licenseRouter from "./license";
 
 const router: IRouter = Router();
 
@@ -50,5 +51,6 @@ router.use("/admin/automation", adminAutomationRouter);
 router.use("/admin/login-history", adminLoginHistoryRouter);
 router.use("/client/servers", clientServerRouter);
 router.use("/dns", clientDnsRouter);
+router.use("/lic", licenseRouter);
 
 export default router;

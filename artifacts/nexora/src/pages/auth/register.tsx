@@ -21,7 +21,7 @@ export default function Register() {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState({
-    firstName: "", lastName: "", email: "", password: "", company: "", phone: "",
+    firstName: "", lastName: "", email: "", password: "", company: "", phone: "", discordUserId: "",
   });
 
   const set = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement>) =>
@@ -53,7 +53,6 @@ export default function Register() {
     <div className="min-h-screen flex items-center justify-center bg-background px-4 py-12">
       <div className="absolute inset-0 hero-grid opacity-30 pointer-events-none" />
       <div className="relative w-full max-w-5xl grid md:grid-cols-2 gap-12 items-center">
-        {/* Left - info */}
         <div className="hidden md:block">
           <Link href="/">
             <div className="inline-flex items-center gap-2 mb-8">
@@ -80,7 +79,6 @@ export default function Register() {
           </ul>
         </div>
 
-        {/* Right - form */}
         <div>
           <div className="text-center mb-6 md:hidden">
             <Link href="/">
@@ -98,32 +96,37 @@ export default function Register() {
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1.5">
                   <Label htmlFor="firstName">First name</Label>
-                  <Input id="firstName" placeholder="Alex" value={form.firstName} onChange={set("firstName")} required data-testid="input-first-name" />
+                  <Input id="firstName" placeholder="Alex" value={form.firstName} onChange={set("firstName")} required />
                 </div>
                 <div className="space-y-1.5">
                   <Label htmlFor="lastName">Last name</Label>
-                  <Input id="lastName" placeholder="Smith" value={form.lastName} onChange={set("lastName")} required data-testid="input-last-name" />
+                  <Input id="lastName" placeholder="Smith" value={form.lastName} onChange={set("lastName")} required />
                 </div>
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="email">Email address</Label>
-                <Input id="email" type="email" placeholder="you@example.com" value={form.email} onChange={set("email")} required data-testid="input-email" />
+                <Input id="email" type="email" placeholder="you@example.com" value={form.email} onChange={set("email")} required />
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="password">Password</Label>
-                <Input id="password" type="password" placeholder="Min 8 characters" value={form.password} onChange={set("password")} required data-testid="input-password" />
+                <Input id="password" type="password" placeholder="Min 8 characters" value={form.password} onChange={set("password")} required />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1.5">
                   <Label htmlFor="company">Company <span className="text-muted-foreground">(optional)</span></Label>
-                  <Input id="company" placeholder="Acme Inc." value={form.company} onChange={set("company")} data-testid="input-company" />
+                  <Input id="company" placeholder="Acme Inc." value={form.company} onChange={set("company")} />
                 </div>
                 <div className="space-y-1.5">
                   <Label htmlFor="phone">Phone <span className="text-muted-foreground">(optional)</span></Label>
-                  <Input id="phone" placeholder="+1 555 0123" value={form.phone} onChange={set("phone")} data-testid="input-phone" />
+                  <Input id="phone" placeholder="+1 555 0123" value={form.phone} onChange={set("phone")} />
                 </div>
               </div>
-              <Button type="submit" className="w-full" size="lg" disabled={loading} data-testid="button-register">
+              <div className="space-y-1.5">
+                <Label htmlFor="discordUserId">Discord User ID <span className="text-muted-foreground">(optional)</span></Label>
+                <Input id="discordUserId" placeholder="e.g. 123456789012345678" value={form.discordUserId} onChange={set("discordUserId")} />
+                <p className="text-xs text-muted-foreground">Used to send your server credentials via Discord DM. Enable Developer Mode → right-click your profile → Copy User ID.</p>
+              </div>
+              <Button type="submit" className="w-full" size="lg" disabled={loading}>
                 {loading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <ArrowRight className="h-4 w-4 mr-2" />}
                 {loading ? "Creating account..." : "Create Free Account"}
               </Button>

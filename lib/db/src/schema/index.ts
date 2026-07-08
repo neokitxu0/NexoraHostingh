@@ -19,3 +19,4 @@ export * from "./affiliate_withdrawals";
 export * from "./dns_records";
 export * from "./automation_jobs";
 export * from "./email_templates";
+export * from "./license";

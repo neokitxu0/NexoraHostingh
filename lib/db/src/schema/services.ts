@@ -18,6 +18,8 @@ export const servicesTable = pgTable("services", {
   suspendedAt: timestamp("suspended_at", { withTimezone: true }),
   cancelledAt: timestamp("cancelled_at", { withTimezone: true }),
   cancelReason: text("cancel_reason"),
+  serverName: text("server_name"),
+  serverDesc: text("server_desc"),
   notes: text("notes"),
   provisionData: text("provision_data").notNull().default("{}"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),

@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/lic-portal/"
+title = "License Manager"
+version = "1.0.0"
+id = "artifacts/license"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/lic-portal/" ]
+localPort = 22492
+
+[services.development]
+run = "pnpm --filter @workspace/license run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/license", "run", "build" ]
+publicDir = "artifacts/license/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "22492"
+BASE_PATH = "/lic-portal/"

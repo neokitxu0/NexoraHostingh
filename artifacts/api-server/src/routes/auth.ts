@@ -10,7 +10,7 @@ const router = Router();
 // POST /api/auth/register
 router.post("/register", async (req, res) => {
   try {
-    const { firstName, lastName, email, password, phone, company, referralCode } = req.body;
+    const { firstName, lastName, email, password, phone, company, referralCode, discordUserId } = req.body;
     if (!firstName || !lastName || !email || !password) {
       res.status(400).json({ error: "Missing required fields" });
       return;
@@ -31,6 +31,7 @@ router.post("/register", async (req, res) => {
       company: company ?? null,
       referralCode: myReferralCode,
       referredBy: referralCode ?? null,
+      discordUserId: discordUserId ?? null,
       emailVerified: true,
       role: "client",
     }).returning();

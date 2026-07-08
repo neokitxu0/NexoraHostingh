@@ -2,7 +2,7 @@ import { db, servicesTable, invoicesTable, usersTable, automationJobsTable, prod
 import { eq, and, lte } from "drizzle-orm";
 import { logger } from "./logger";
 import { sendTemplateEmail } from "./mailer";
-import { sendDiscordNotification } from "./discord";
+import { sendDiscordNotification, sendDiscordDM } from "./discord";
 import { getPterodactylClient } from "./pterodactyl";
 import { getProxmoxClient } from "./proxmox";
 
@@ -136,12 +136,13 @@ export async function provisionService(serviceId: number): Promise<{ success: bo
         pteroPassword = created.password;
       }
 
-      const ramMb = parseInt(product.ram ?? "1024") || 1024;
-      const diskMb = parseInt(product.diskSpace ?? "10240") || 10240;
-      const cpuPct = parseInt(product.cpu ?? "100") || 100;
+      const ramMb = config.ramMb ?? config.ram ?? (parseInt(product.ram ?? "1024") || 1024);
+      const diskMb = config.diskMb ?? config.disk ?? (parseInt(product.diskSpace ?? "10240") || 10240);
+      const cpuPct = config.cpuPct ?? config.cpu ?? (parseInt(product.cpu ?? "100") || 100);
+      const pteroServerName = (service as any).serverName ?? `${user.email.split("@")[0]}-${service.id}`;
 
       const server = await client.createServer({
-        name: `${user.email.split("@")[0]}-${service.id}`,
+        name: pteroServerName,
         userId: pteroUser.id,
         eggId: config.eggId ?? 1,
         nestId: config.nestId ?? 1,
@@ -184,6 +185,21 @@ export async function provisionService(serviceId: number): Promise<{ success: bo
         { name: "Service", value: product.name, inline: true },
         { name: "Server ID", value: String(server.id), inline: true },
       ]);
+
+      const discordId = (user as any).discordUserId;
+      if (discordId) {
+        const dmLines = [
+          `🎮 **Your server is ready!**`,
+          `**Service:** ${product.name}`,
+          `**Server Name:** ${pteroServerName}`,
+          `**Panel URL:** ${provisionData.panelUrl}`,
+          `**Username:** ${user.email}`,
+          pteroPassword ? `**Password:** \`${pteroPassword}\`` : `**Password:** *(your existing account password)*`,
+          `**Server ID:** ${server.identifier}`,
+          `\nLogin at the panel and your server will be there. 🚀`,
+        ].join("\n");
+        await sendDiscordDM(discordId, dmLines);
+      }
 
       await logJob("provision_service", serviceId, "completed", JSON.stringify(provisionData));
       return { success: true, message: `Server provisioned: ${server.identifier}` };
