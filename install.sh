@@ -1,355 +1,560 @@
 #!/usr/bin/env bash
-# ============================================================
-#  NexoraHosting — Auto Installer
-#  Tested on: Ubuntu 22.04 / 24.04 LTS (x86_64)
-#  Run as:  bash install.sh
-# ============================================================
+# ╔══════════════════════════════════════════════════════════════════╗
+# ║       NexoraHosting — Auto Installer v3.0                       ║
+# ║       Supports: Debian 10/11/12/13 · Ubuntu 20/22/24 LTS       ║
+# ║       Usage  : sudo bash install.sh                             ║
+# ╚══════════════════════════════════════════════════════════════════╝
 set -euo pipefail
+IFS=$'\n\t'
 
-# ── Colors ──────────────────────────────────────────────────
-RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'
-CYAN='\033[0;36m'; BOLD='\033[1m'; RESET='\033[0m'
+# ── Colours ──────────────────────────────────────────────────────────
+RED='\033[0;31m' GREEN='\033[0;32m' YELLOW='\033[1;33m'
+CYAN='\033[0;36m' MAGENTA='\033[0;35m' BOLD='\033[1m' DIM='\033[2m' RESET='\033[0m'
 
-info()    { echo -e "${CYAN}[INFO]${RESET} $*"; }
-success() { echo -e "${GREEN}[OK]${RESET}   $*"; }
-warn()    { echo -e "${YELLOW}[WARN]${RESET} $*"; }
-error()   { echo -e "${RED}[ERR]${RESET}  $*"; exit 1; }
-header()  { echo -e "\n${BOLD}${CYAN}══ $* ══${RESET}\n"; }
+info()    { echo -e "${CYAN}  ➜${RESET}  $*"; }
+success() { echo -e "${GREEN}  ✔${RESET}  $*"; }
+warn()    { echo -e "${YELLOW}  ⚠${RESET}  $*"; }
+die()     { echo -e "${RED}  ✘  $*${RESET}"; exit 1; }
+step()    { echo -e "\n${BOLD}${MAGENTA}▸ $*${RESET}"; }
+hr()      { echo -e "${DIM}────────────────────────────────────────────────────────${RESET}"; }
 
-# ── Banner ───────────────────────────────────────────────────
+spinner() {
+  local pid=$1 msg=$2 delay=0.12
+  local frames=('⠋' '⠙' '⠹' '⠸' '⠼' '⠴' '⠦' '⠧' '⠇' '⠏')
+  local i=0
+  while kill -0 "$pid" 2>/dev/null; do
+    printf "\r${CYAN}  ${frames[$i]}${RESET}  %s..." "$msg"
+    i=$(( (i+1) % ${#frames[@]} ))
+    sleep "$delay"
+  done
+  printf "\r%-70s\r" " "
+}
+
+run() {
+  # run "Description" cmd args...
+  local msg="$1"; shift
+  ("$@" >> /tmp/nx_install.log 2>&1) &
+  local pid=$!
+  spinner "$pid" "$msg"
+  if wait "$pid"; then
+    success "$msg"
+  else
+    echo -e "${RED}  ✘  $msg FAILED${RESET}"
+    echo -e "${DIM}  → tail /tmp/nx_install.log  (last 20 lines below)${RESET}"
+    tail -20 /tmp/nx_install.log | sed 's/^/    /'
+    die "Aborting. Fix the error above and re-run."
+  fi
+}
+
+# ── Root check ───────────────────────────────────────────────────────
+[[ "$EUID" -eq 0 ]] || die "Run as root:  sudo bash install.sh"
+
+# ── Detect OS ────────────────────────────────────────────────────────
+if [[ -f /etc/os-release ]]; then
+  # shellcheck disable=SC1091
+  source /etc/os-release
+  OS_ID="${ID:-unknown}"
+  OS_CODENAME="${VERSION_CODENAME:-}"
+  OS_VERSION="${VERSION_ID:-0}"
+else
+  die "Cannot detect OS. /etc/os-release not found."
+fi
+
+case "$OS_ID" in
+  ubuntu)
+    [[ $(echo "$OS_VERSION >= 20.04" | bc -l) -eq 1 ]] || \
+      warn "Ubuntu $OS_VERSION is old — Ubuntu 20.04+ recommended."
+    ;;
+  debian)
+    [[ "$OS_VERSION" -ge 10 ]] 2>/dev/null || \
+      warn "Debian $OS_VERSION is old — Debian 10+ recommended."
+    ;;
+  *)
+    warn "OS '$OS_ID' is not officially supported. Proceeding anyway..."
+    ;;
+esac
+
+# ── Fix any broken dpkg state first ──────────────────────────────────
+export DEBIAN_FRONTEND=noninteractive
+dpkg --configure -a 2>/dev/null || true
+apt-get -f install -y -qq    2>/dev/null || true
+
+# ── Banner ───────────────────────────────────────────────────────────
 clear
 echo -e "${BOLD}${CYAN}"
-cat << 'EOF'
- _   _                           _   _           _   _
-| \ | | _____  _____  _ __ __ _| | | | ___  ___| |_(_)_ __   __ _
-|  \| |/ _ \ \/ / _ \| '__/ _` | |_| |/ _ \/ __| __| | '_ \ / _` |
-| |\  |  __/>  < (_) | | | (_| |  _  | (_) \__ \ |_| | | | | (_| |
-|_| \_|\___/_/\_\___/|_|  \__,_|_| |_|\___/|___/\__|_|_| |_|\__, |
-                                                               |___/
-          Auto Installer — WHMCS-style Hosting Billing Platform
-EOF
-echo -e "${RESET}"
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "  ███╗   ██╗███████╗██╗  ██╗ ██████╗ ██████╗  █████╗ "
+echo "  ████╗  ██║██╔════╝╚██╗██╔╝██╔═══██╗██╔══██╗██╔══██╗"
+echo "  ██╔██╗ ██║█████╗   ╚███╔╝ ██║   ██║██████╔╝███████║"
+echo "  ██║╚██╗██║██╔══╝   ██╔██╗ ██║   ██║██╔══██╗██╔══██║"
+echo "  ██║ ╚████║███████╗██╔╝ ██╗╚██████╔╝██║  ██║██║  ██║"
+echo "  ╚═╝  ╚═══╝╚══════╝╚═╝  ╚═╝ ╚═════╝ ╚═╝  ╚═╝╚═╝  ╚═╝"
+echo -e "${RESET}${DIM}       WHMCS-style Hosting Billing Platform — v3.0${RESET}"
 echo ""
+echo -e "  OS detected : ${CYAN}${PRETTY_NAME:-$OS_ID $OS_VERSION}${RESET}"
+hr
 
-# ── Root check ───────────────────────────────────────────────
-if [[ "$EUID" -ne 0 ]]; then
-  error "Please run as root: sudo bash install.sh"
-fi
-
-# ── Collect config ───────────────────────────────────────────
-header "Configuration"
-
-read -rp "$(echo -e "${BOLD}Domain / IP${RESET} (e.g. nexora.yourdomain.com): ")" DOMAIN
-DOMAIN="${DOMAIN:-localhost}"
-
-read -rp "$(echo -e "${BOLD}Admin Email${RESET}: ")" ADMIN_EMAIL
-ADMIN_EMAIL="${ADMIN_EMAIL:-admin@nexorahosting.com}"
-
-while true; do
-  read -rsp "$(echo -e "${BOLD}Admin Password${RESET} (min 8 chars): ")" ADMIN_PASSWORD
-  echo ""
-  if [[ ${#ADMIN_PASSWORD} -ge 8 ]]; then break
-  else warn "Password too short, try again."; fi
-done
-
-read -rp "$(echo -e "${BOLD}PostgreSQL DB name${RESET} [nexorahosting]: ")" DB_NAME
-DB_NAME="${DB_NAME:-nexorahosting}"
-
-read -rp "$(echo -e "${BOLD}PostgreSQL DB user${RESET} [nexorauser]: ")" DB_USER
-DB_USER="${DB_USER:-nexorauser}"
-
-while true; do
-  read -rsp "$(echo -e "${BOLD}PostgreSQL DB password${RESET}: ")" DB_PASS
-  echo ""
-  if [[ ${#DB_PASS} -ge 6 ]]; then break
-  else warn "Password too short, try again."; fi
-done
-
-read -rsp "$(echo -e "${BOLD}Session Secret${RESET} (leave blank to auto-generate): ")" SESSION_SECRET
-echo ""
-if [[ -z "$SESSION_SECRET" ]]; then
-  SESSION_SECRET=$(openssl rand -hex 32)
-  info "Auto-generated session secret."
-fi
-
-read -rp "$(echo -e "${BOLD}Razorpay Key ID${RESET} (optional, press Enter to skip): ")" RAZORPAY_KEY_ID
-read -rsp "$(echo -e "${BOLD}Razorpay Key Secret${RESET} (optional, press Enter to skip): ")" RAZORPAY_KEY_SECRET
-echo ""
+# ── Script location check ────────────────────────────────────────────
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+[[ -f "$SCRIPT_DIR/pnpm-workspace.yaml" ]] || \
+  die "Run this script from the NexoraHosting project root."
 
 INSTALL_DIR="/opt/nexorahosting"
-API_PORT=8080
-FRONTEND_PORT=3000
-NGINX_AVAILABLE="/etc/nginx/sites-available/nexorahosting"
-NGINX_ENABLED="/etc/nginx/sites-enabled/nexorahosting"
+LOG_FILE="/var/log/nexorahosting-install.log"
+: > "$LOG_FILE"
+exec > >(tee -a "$LOG_FILE") 2>&1
+echo -e "${DIM}  Install log: $LOG_FILE${RESET}\n"
+
+# ── Collect user input ───────────────────────────────────────────────
+echo -e "${BOLD}  Setup Configuration${RESET}\n"
+
+ask() {
+  # ask VAR "Label" "default" secret?
+  local var="$1" label="$2" default="${3:-}" secret="${4:-no}"
+  while true; do
+    if [[ "$secret" == "yes" ]]; then
+      read -rsp "  ${BOLD}${label}${RESET}${default:+ [****]}: " val; echo ""
+    else
+      read -rp  "  ${BOLD}${label}${RESET}${default:+ [${DIM}${default}${RESET}]}: " val
+    fi
+    val="${val:-$default}"
+    if [[ -n "$val" ]]; then printf -v "$var" '%s' "$val"; return; fi
+    warn "Required — please enter a value."
+  done
+}
+
+ask DOMAIN        "Domain or Server IP"          "localhost"
+ask ADMIN_EMAIL   "Admin Email"                  "admin@nexorahosting.com"
+ask ADMIN_PASSWORD "Admin Password (min 8 chars)" ""    "yes"
+while [[ ${#ADMIN_PASSWORD} -lt 8 ]]; do
+  warn "Too short — minimum 8 characters."; ask ADMIN_PASSWORD "Admin Password" "" "yes"
+done
+
+ask DB_NAME "PostgreSQL database name" "nexorahosting"
+ask DB_USER "PostgreSQL username"      "nexorauser"
+ask DB_PASS "PostgreSQL password"      ""   "yes"
+while [[ ${#DB_PASS} -lt 6 ]]; do
+  warn "Too short — minimum 6 characters."; ask DB_PASS "PostgreSQL password" "" "yes"
+done
 
 echo ""
-info "Install directory : $INSTALL_DIR"
-info "Domain            : $DOMAIN"
-info "Admin email       : $ADMIN_EMAIL"
-info "DB name           : $DB_NAME"
+echo -e "  ${BOLD}Razorpay (optional — press Enter to skip):${RESET}"
+read -rp  "  Razorpay Key ID    : " RAZORPAY_KEY_ID     || true
+read -rsp "  Razorpay Key Secret: " RAZORPAY_KEY_SECRET  || true
 echo ""
-read -rp "$(echo -e "${BOLD}Continue? [y/N]${RESET} ")" CONFIRM
-[[ "$CONFIRM" =~ ^[Yy]$ ]] || { echo "Aborted."; exit 0; }
 
-# ── System packages ──────────────────────────────────────────
-header "System Packages"
+SESSION_SECRET="$(openssl rand -hex 32)"
+DATABASE_URL="postgresql://${DB_USER}:${DB_PASS}@127.0.0.1:5432/${DB_NAME}"
 
-apt-get update -qq
-apt-get install -y -qq \
-  curl git unzip build-essential ca-certificates \
-  nginx certbot python3-certbot-nginx \
-  postgresql postgresql-contrib \
-  > /dev/null
+echo ""
+hr
+echo -e "  ${BOLD}Summary:${RESET}"
+echo -e "  Domain      : ${CYAN}$DOMAIN${RESET}"
+echo -e "  Admin Email : ${CYAN}$ADMIN_EMAIL${RESET}"
+echo -e "  DB Name     : ${CYAN}$DB_NAME${RESET}"
+echo -e "  Install Dir : ${CYAN}$INSTALL_DIR${RESET}"
+hr
+echo ""
+read -rp "  Proceed with installation? [y/N] " OK
+[[ "$OK" =~ ^[Yy]$ ]] || { echo "  Aborted."; exit 0; }
+echo ""
 
-success "System packages installed"
+# ════════════════════════════════════════════════════════════════════
+#  STEP 1 — System packages
+# ════════════════════════════════════════════════════════════════════
+step "Step 1/12 — System Packages"
 
-# ── Node.js 20 ───────────────────────────────────────────────
-header "Node.js 20"
+run "Updating apt cache" apt-get update -qq
 
-if ! command -v node &>/dev/null || [[ "$(node -v | cut -d. -f1 | tr -d 'v')" -lt 20 ]]; then
-  curl -fsSL https://deb.nodesource.com/setup_20.x | bash - > /dev/null
-  apt-get install -y -qq nodejs > /dev/null
+PKGS=(
+  curl git rsync wget unzip gnupg2 ca-certificates lsb-release
+  build-essential software-properties-common apt-transport-https
+  nginx ufw fail2ban
+  postgresql postgresql-contrib
+)
+
+# certbot differs slightly between Debian and Ubuntu
+if [[ "$OS_ID" == "debian" && "$OS_VERSION" -ge 12 ]]; then
+  PKGS+=(certbot python3-certbot-nginx)
+elif [[ "$OS_ID" == "ubuntu" ]]; then
+  PKGS+=(certbot python3-certbot-nginx)
+else
+  PKGS+=(certbot python3-certbot-nginx)
 fi
-success "Node.js $(node -v)"
 
-# ── pnpm ─────────────────────────────────────────────────────
-header "pnpm"
+run "Installing packages (nginx, postgresql, ufw, fail2ban ...)" \
+  apt-get install -y -qq "${PKGS[@]}"
 
-if ! command -v pnpm &>/dev/null; then
-  npm install -g pnpm@latest > /dev/null
+# ════════════════════════════════════════════════════════════════════
+#  STEP 2 — Node.js 20
+# ════════════════════════════════════════════════════════════════════
+step "Step 2/12 — Node.js 20"
+
+CURRENT_NODE=0
+command -v node &>/dev/null && CURRENT_NODE="$(node -v 2>/dev/null | cut -d. -f1 | tr -d 'v')" || true
+
+if [[ "$CURRENT_NODE" -lt 20 ]]; then
+  run "Downloading NodeSource setup script" \
+    bash -c "curl -fsSL https://deb.nodesource.com/setup_20.x | bash - > /tmp/nx_install.log 2>&1"
+  run "Installing Node.js 20" \
+    apt-get install -y -qq nodejs
+else
+  success "Node.js $(node -v) — already installed"
 fi
-success "pnpm $(pnpm -v)"
 
-# ── PM2 ──────────────────────────────────────────────────────
-header "PM2 (Process Manager)"
+# Verify
+NODE_VER="$(node -v)"
+NPM_VER="$(npm -v)"
+success "node $NODE_VER  |  npm $NPM_VER"
 
-if ! command -v pm2 &>/dev/null; then
-  npm install -g pm2 > /dev/null
-fi
-success "PM2 $(pm2 -v)"
+# ════════════════════════════════════════════════════════════════════
+#  STEP 3 — pnpm & PM2
+# ════════════════════════════════════════════════════════════════════
+step "Step 3/12 — pnpm & PM2"
 
-# ── PostgreSQL setup ─────────────────────────────────────────
-header "PostgreSQL"
+run "Installing pnpm (package manager)"  bash -c "npm install -g pnpm@latest   > /tmp/nx_install.log 2>&1"
+run "Installing pm2  (process manager)"  bash -c "npm install -g pm2@latest    > /tmp/nx_install.log 2>&1"
+success "pnpm $(pnpm -v)  |  pm2 $(pm2 -v)"
 
-systemctl enable --now postgresql > /dev/null 2>&1
+# ════════════════════════════════════════════════════════════════════
+#  STEP 4 — PostgreSQL
+# ════════════════════════════════════════════════════════════════════
+step "Step 4/12 — PostgreSQL Database"
 
-sudo -u postgres psql -c "DROP DATABASE IF EXISTS ${DB_NAME};" > /dev/null 2>&1 || true
-sudo -u postgres psql -c "DROP USER IF EXISTS ${DB_USER};" > /dev/null 2>&1 || true
-sudo -u postgres psql -c "CREATE USER ${DB_USER} WITH ENCRYPTED PASSWORD '${DB_PASS}';" > /dev/null
-sudo -u postgres psql -c "CREATE DATABASE ${DB_NAME} OWNER ${DB_USER};" > /dev/null
-sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE ${DB_NAME} TO ${DB_USER};" > /dev/null
+systemctl enable postgresql --quiet 2>/dev/null || true
+systemctl start  postgresql          2>/dev/null || true
+sleep 2  # give postgres a moment
 
-DATABASE_URL="postgresql://${DB_USER}:${DB_PASS}@localhost:5432/${DB_NAME}"
-success "Database '${DB_NAME}' created"
+# Create user (idempotent)
+sudo -u postgres psql -tc \
+  "SELECT 1 FROM pg_roles WHERE rolname='${DB_USER}'" | grep -q 1 || \
+  sudo -u postgres psql -c \
+  "CREATE USER ${DB_USER} WITH ENCRYPTED PASSWORD '${DB_PASS}';" > /dev/null
 
-# ── Project files ────────────────────────────────────────────
-header "Project Files"
+# Create DB (idempotent)
+sudo -u postgres psql -tc \
+  "SELECT 1 FROM pg_database WHERE datname='${DB_NAME}'" | grep -q 1 || \
+  sudo -u postgres psql -c \
+  "CREATE DATABASE ${DB_NAME} OWNER ${DB_USER};"  > /dev/null
+
+sudo -u postgres psql -c \
+  "GRANT ALL PRIVILEGES ON DATABASE ${DB_NAME} TO ${DB_USER};" > /dev/null
+sudo -u postgres psql -d "${DB_NAME}" -c \
+  "GRANT ALL ON SCHEMA public TO ${DB_USER};" > /dev/null
+
+success "Database '${DB_NAME}' ready (user: ${DB_USER})"
+
+# ════════════════════════════════════════════════════════════════════
+#  STEP 5 — Deploy files
+# ════════════════════════════════════════════════════════════════════
+step "Step 5/12 — Deploying Project Files"
 
 if [[ -d "$INSTALL_DIR" ]]; then
-  warn "Directory $INSTALL_DIR exists. Removing old installation..."
-  pm2 delete nexora-api nexora-frontend 2>/dev/null || true
-  rm -rf "$INSTALL_DIR"
+  BACKUP="/opt/nexorahosting_bak_$(date +%Y%m%d_%H%M%S)"
+  info "Previous installation found — backing up to $BACKUP"
+  cp -r "$INSTALL_DIR" "$BACKUP"
+  pm2 delete nexora-api 2>/dev/null || true
 fi
 
 mkdir -p "$INSTALL_DIR"
 
-# Copy from current directory if we're running from inside the project
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-if [[ -f "$SCRIPT_DIR/pnpm-workspace.yaml" ]]; then
-  info "Copying project files from $SCRIPT_DIR ..."
-  rsync -a --exclude='node_modules' --exclude='.git' \
-    --exclude='*/dist' --exclude='*/.tsbuildinfo' \
-    "$SCRIPT_DIR/" "$INSTALL_DIR/"
-  success "Files copied to $INSTALL_DIR"
-else
-  error "Run this script from the root of the NexoraHosting project folder."
-fi
+run "Copying files to $INSTALL_DIR" \
+  rsync -a --delete \
+    --exclude='node_modules'    \
+    --exclude='.git'            \
+    --exclude='*/dist'          \
+    --exclude='*/.tsbuildinfo'  \
+    --exclude='*.zip'           \
+    "${SCRIPT_DIR}/" "${INSTALL_DIR}/"
 
-cd "$INSTALL_DIR"
+chmod 750 "$INSTALL_DIR"
 
-# ── .env file ────────────────────────────────────────────────
-header "Environment Variables"
+# ════════════════════════════════════════════════════════════════════
+#  STEP 6 — .env files
+# ════════════════════════════════════════════════════════════════════
+step "Step 6/12 — Environment Configuration"
 
-cat > "$INSTALL_DIR/.env" << ENV
+cat > "${INSTALL_DIR}/.env" << ENV
+# NexoraHosting Production Config — $(date)
 DATABASE_URL=${DATABASE_URL}
 SESSION_SECRET=${SESSION_SECRET}
 ADMIN_EMAIL=${ADMIN_EMAIL}
 ADMIN_PASSWORD=${ADMIN_PASSWORD}
 NODE_ENV=production
-PORT=${API_PORT}
+PORT=8080
 BASE_PATH=/api
 RAZORPAY_KEY_ID=${RAZORPAY_KEY_ID:-}
 RAZORPAY_KEY_SECRET=${RAZORPAY_KEY_SECRET:-}
 ENV
 
-# Also write per-artifact .env files
-cp "$INSTALL_DIR/.env" "$INSTALL_DIR/artifacts/api-server/.env"
+chmod 600 "${INSTALL_DIR}/.env"
+cp  "${INSTALL_DIR}/.env" "${INSTALL_DIR}/artifacts/api-server/.env"
 
-cat > "$INSTALL_DIR/artifacts/nexora/.env" << FENV
+cat > "${INSTALL_DIR}/artifacts/nexora/.env" << FENV
 VITE_API_BASE=/api
 NODE_ENV=production
 FENV
 
-success ".env files written"
+success ".env files created (mode 600 — root only)"
 
-# ── Install dependencies ─────────────────────────────────────
-header "Installing Dependencies"
+# ════════════════════════════════════════════════════════════════════
+#  STEP 7 — Install Node dependencies
+# ════════════════════════════════════════════════════════════════════
+step "Step 7/12 — Installing Node.js Dependencies"
 
-pnpm install --frozen-lockfile 2>&1 | tail -5
-success "Dependencies installed"
+run "pnpm install (this may take 1-2 min)" \
+  bash -c "cd ${INSTALL_DIR} && pnpm install --frozen-lockfile > /tmp/nx_install.log 2>&1"
 
-# ── Build libs ───────────────────────────────────────────────
-header "Building Shared Libraries"
+# ════════════════════════════════════════════════════════════════════
+#  STEP 8 — Build shared libs + apps
+# ════════════════════════════════════════════════════════════════════
+step "Step 8/12 — Building Application"
 
-pnpm run typecheck:libs 2>&1 | tail -5
-success "Libs built"
+run "Building shared TypeScript libraries" \
+  bash -c "cd ${INSTALL_DIR} && pnpm run typecheck:libs > /tmp/nx_install.log 2>&1"
 
-# ── Push DB schema ───────────────────────────────────────────
-header "Database Schema"
+run "Building API server" \
+  bash -c "cd ${INSTALL_DIR}/artifacts/api-server && pnpm run build > /tmp/nx_install.log 2>&1"
 
-# Load env so drizzle can connect
-export DATABASE_URL
-pnpm --filter @workspace/db run push --force 2>&1 | tail -10
-success "Schema pushed to database"
+run "Building frontend (React + Vite)" \
+  bash -c "cd ${INSTALL_DIR}/artifacts/nexora && pnpm run build > /tmp/nx_install.log 2>&1"
 
-# ── Seed database ────────────────────────────────────────────
-header "Seeding Database"
+# ════════════════════════════════════════════════════════════════════
+#  STEP 9 — Database schema + seed
+# ════════════════════════════════════════════════════════════════════
+step "Step 9/12 — Database Setup"
 
-export ADMIN_EMAIL ADMIN_PASSWORD
-pnpm --filter @workspace/scripts run seed 2>&1 | tail -10
-success "Database seeded (admin: $ADMIN_EMAIL)"
+export DATABASE_URL ADMIN_EMAIL ADMIN_PASSWORD
 
-# ── Build API server ─────────────────────────────────────────
-header "Building API Server"
+run "Pushing database schema (Drizzle ORM)" \
+  bash -c "cd ${INSTALL_DIR} && pnpm --filter @workspace/db run push --force > /tmp/nx_install.log 2>&1"
 
-cd "$INSTALL_DIR/artifacts/api-server"
-pnpm run build 2>&1 | tail -5
-success "API server built"
+run "Seeding database (admin + demo data)" \
+  bash -c "cd ${INSTALL_DIR} && pnpm --filter @workspace/scripts run seed > /tmp/nx_install.log 2>&1"
 
-# ── Build frontend ───────────────────────────────────────────
-header "Building Frontend"
+success "Admin account created: ${ADMIN_EMAIL}"
 
-cd "$INSTALL_DIR/artifacts/nexora"
-pnpm run build 2>&1 | tail -5
-success "Frontend built"
+# ════════════════════════════════════════════════════════════════════
+#  STEP 10 — PM2
+# ════════════════════════════════════════════════════════════════════
+step "Step 10/12 — Process Manager (PM2)"
 
-cd "$INSTALL_DIR"
-
-# ── PM2 ecosystem ────────────────────────────────────────────
-header "PM2 Process Configuration"
-
-cat > "$INSTALL_DIR/ecosystem.config.cjs" << 'PM2'
+cat > "${INSTALL_DIR}/ecosystem.config.cjs" << 'PM2CFG'
 module.exports = {
-  apps: [
-    {
-      name: "nexora-api",
-      script: "./artifacts/api-server/dist/index.mjs",
-      cwd: "/opt/nexorahosting",
-      env_file: "/opt/nexorahosting/.env",
-      instances: 1,
-      autorestart: true,
-      watch: false,
-      max_memory_restart: "512M",
-    }
-  ]
+  apps: [{
+    name              : "nexora-api",
+    script            : "./artifacts/api-server/dist/index.mjs",
+    cwd               : "/opt/nexorahosting",
+    env_file          : "/opt/nexorahosting/.env",
+    instances         : 1,
+    exec_mode         : "fork",
+    autorestart       : true,
+    watch             : false,
+    max_memory_restart: "512M",
+    error_file        : "/var/log/nexorahosting-pm2-error.log",
+    out_file          : "/var/log/nexorahosting-pm2-out.log",
+    log_date_format   : "YYYY-MM-DD HH:mm:ss Z",
+  }]
 };
-PM2
-
-success "PM2 ecosystem written"
-
-# ── Start with PM2 ───────────────────────────────────────────
-header "Starting Services"
+PM2CFG
 
 pm2 delete nexora-api 2>/dev/null || true
-pm2 start "$INSTALL_DIR/ecosystem.config.cjs" --env production
-pm2 save
-pm2 startup systemd -u root --hp /root | tail -1 | bash || true
+pm2 start "${INSTALL_DIR}/ecosystem.config.cjs"
+pm2 save --force
 
-success "API server running via PM2"
+# Enable PM2 on boot (works on Debian & Ubuntu with systemd)
+pm2 startup systemd -u root --hp /root --silent 2>/tmp/nx_pm2_startup.log || true
+STARTUP_CMD="$(tail -1 /tmp/nx_pm2_startup.log)"
+[[ "$STARTUP_CMD" == "sudo"* ]] && eval "$STARTUP_CMD" || systemctl enable pm2-root 2>/dev/null || true
 
-# ── Nginx config ─────────────────────────────────────────────
-header "Nginx Web Server"
+success "PM2 running — nexora-api started"
 
-FRONTEND_DIST="$INSTALL_DIR/artifacts/nexora/dist"
+# ════════════════════════════════════════════════════════════════════
+#  STEP 11 — Nginx
+# ════════════════════════════════════════════════════════════════════
+step "Step 11/12 — Nginx Web Server"
 
-cat > "$NGINX_AVAILABLE" << NGINX
+FRONTEND_DIST="${INSTALL_DIR}/artifacts/nexora/dist"
+
+cat > /etc/nginx/sites-available/nexorahosting << NGINXCFG
+# NexoraHosting — Nginx Config (generated $(date))
+
+limit_req_zone \$binary_remote_addr zone=api_zone:10m   rate=30r/m;
+limit_req_zone \$binary_remote_addr zone=login_zone:10m  rate=5r/m;
+
 server {
     listen 80;
+    listen [::]:80;
     server_name ${DOMAIN};
 
-    # Static frontend
-    root ${FRONTEND_DIST};
-    index index.html;
+    access_log /var/log/nginx/nexorahosting-access.log;
+    error_log  /var/log/nginx/nexorahosting-error.log warn;
 
-    # API proxy
+    # Security headers
+    add_header X-Frame-Options         "SAMEORIGIN"   always;
+    add_header X-Content-Type-Options  "nosniff"      always;
+    add_header X-XSS-Protection        "1; mode=block" always;
+    add_header Referrer-Policy         "strict-origin-when-cross-origin" always;
+
+    # API — proxied to Node.js on port 8080
     location /api {
-        proxy_pass         http://127.0.0.1:${API_PORT};
-        proxy_http_version 1.1;
-        proxy_set_header   Upgrade \$http_upgrade;
-        proxy_set_header   Connection 'upgrade';
-        proxy_set_header   Host \$host;
-        proxy_set_header   X-Real-IP \$remote_addr;
-        proxy_set_header   X-Forwarded-For \$proxy_add_x_forwarded_for;
+        limit_req zone=api_zone burst=20 nodelay;
+        proxy_pass          http://127.0.0.1:8080;
+        proxy_http_version  1.1;
+        proxy_set_header    Upgrade             \$http_upgrade;
+        proxy_set_header    Connection          "upgrade";
+        proxy_set_header    Host               \$host;
+        proxy_set_header    X-Real-IP          \$remote_addr;
+        proxy_set_header    X-Forwarded-For    \$proxy_add_x_forwarded_for;
+        proxy_set_header    X-Forwarded-Proto  \$scheme;
+        proxy_read_timeout  60s;
+        proxy_connect_timeout 10s;
+    }
+
+    # Login stricter rate limit
+    location /api/auth/login {
+        limit_req zone=login_zone burst=5 nodelay;
+        proxy_pass         http://127.0.0.1:8080;
+        proxy_set_header   Host              \$host;
+        proxy_set_header   X-Real-IP         \$remote_addr;
         proxy_set_header   X-Forwarded-Proto \$scheme;
-        proxy_cache_bypass \$http_upgrade;
+    }
+
+    # Frontend assets (long cache)
+    location /assets/ {
+        root     ${FRONTEND_DIST};
+        expires  1y;
+        add_header Cache-Control "public, immutable";
+        access_log off;
     }
 
     # React SPA fallback
     location / {
+        root  ${FRONTEND_DIST};
+        index index.html;
         try_files \$uri \$uri/ /index.html;
+        add_header Cache-Control "no-cache";
     }
 
+    # Gzip compression
     gzip on;
-    gzip_types text/plain text/css application/json application/javascript text/xml application/xml application/xml+rss text/javascript;
-}
-NGINX
+    gzip_vary on;
+    gzip_proxied any;
+    gzip_comp_level 6;
+    gzip_types text/plain text/css application/json application/javascript
+               text/xml application/xml text/javascript image/svg+xml;
 
-ln -sf "$NGINX_AVAILABLE" "$NGINX_ENABLED"
+    client_max_body_size 10M;
+}
+NGINXCFG
+
+ln -sf /etc/nginx/sites-available/nexorahosting /etc/nginx/sites-enabled/nexorahosting
 rm -f /etc/nginx/sites-enabled/default 2>/dev/null || true
 
-nginx -t && systemctl reload nginx
-success "Nginx configured for $DOMAIN"
+nginx -t 2>/tmp/nx_nginx_test.log || die "Nginx config invalid — check /tmp/nx_nginx_test.log"
+systemctl enable nginx  --quiet
+systemctl reload nginx
+success "Nginx configured for ${DOMAIN}"
 
-# ── SSL (optional) ───────────────────────────────────────────
+# ── Optional SSL ──────────────────────────────────────────────────────
 if [[ "$DOMAIN" != "localhost" && "$DOMAIN" != "127.0.0.1" ]]; then
-  header "SSL Certificate (Let's Encrypt)"
-  read -rp "$(echo -e "${BOLD}Setup HTTPS with Let's Encrypt? [y/N]${RESET} ")" SSL_CONFIRM
-  if [[ "$SSL_CONFIRM" =~ ^[Yy]$ ]]; then
-    read -rp "$(echo -e "${BOLD}Email for SSL notifications${RESET}: ")" SSL_EMAIL
-    certbot --nginx -d "$DOMAIN" --non-interactive --agree-tos -m "$SSL_EMAIL" && \
-      success "SSL certificate installed — site is now HTTPS" || \
-      warn "SSL setup failed. You can run: certbot --nginx -d $DOMAIN"
+  echo ""
+  read -rp "  Setup HTTPS with Let's Encrypt? [y/N] " SSL_OK
+  if [[ "$SSL_OK" =~ ^[Yy]$ ]]; then
+    read -rp "  Email for SSL notifications: " SSL_EMAIL
+    if certbot --nginx -d "$DOMAIN" --non-interactive --agree-tos \
+               -m "$SSL_EMAIL" --redirect 2>/tmp/nx_certbot.log; then
+      success "HTTPS enabled — auto-renews via systemd timer"
+      systemctl enable --now certbot.timer 2>/dev/null || true
+    else
+      warn "SSL failed — run manually later: certbot --nginx -d ${DOMAIN}"
+    fi
   fi
 fi
 
-# ── Firewall ─────────────────────────────────────────────────
-header "Firewall"
+# ════════════════════════════════════════════════════════════════════
+#  STEP 12 — Security hardening
+# ════════════════════════════════════════════════════════════════════
+step "Step 12/12 — Security (Firewall + Fail2ban)"
 
-if command -v ufw &>/dev/null; then
-  ufw allow 22/tcp  > /dev/null 2>&1 || true
-  ufw allow 80/tcp  > /dev/null 2>&1 || true
-  ufw allow 443/tcp > /dev/null 2>&1 || true
-  ufw --force enable > /dev/null 2>&1 || true
-  success "UFW firewall configured (22, 80, 443)"
+# UFW firewall
+ufw --force reset    > /dev/null 2>&1
+ufw default deny incoming  > /dev/null
+ufw default allow outgoing > /dev/null
+ufw allow ssh        > /dev/null
+ufw allow 80/tcp     > /dev/null
+ufw allow 443/tcp    > /dev/null
+ufw --force enable   > /dev/null
+success "Firewall active (22 SSH, 80 HTTP, 443 HTTPS)"
+
+# Fail2ban
+systemctl enable fail2ban --quiet 2>/dev/null || true
+systemctl start  fail2ban         2>/dev/null || true
+success "Fail2ban active (brute-force protection)"
+
+# ── Health check ──────────────────────────────────────────────────────
+step "Health Check"
+sleep 4
+HTTP_STATUS="$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8080/api/healthz 2>/dev/null || echo 000)"
+if [[ "$HTTP_STATUS" == "200" ]]; then
+  success "API server responded HTTP 200 ✔"
 else
-  warn "ufw not found — configure your firewall manually"
+  warn "API returned HTTP ${HTTP_STATUS} — may still be starting. Check: pm2 logs nexora-api"
 fi
 
-# ── Done ─────────────────────────────────────────────────────
-header "Installation Complete"
+# ── Generate helper scripts ───────────────────────────────────────────
+cat > "${INSTALL_DIR}/update.sh" << 'UPDSH'
+#!/usr/bin/env bash
+# NexoraHosting — Update Script
+set -euo pipefail
+INSTALL_DIR="/opt/nexorahosting"
+cd "$INSTALL_DIR"
+echo "→ Installing dependencies..."
+pnpm install --frozen-lockfile
+echo "→ Building libs..."
+pnpm run typecheck:libs
+echo "→ Building API..."
+(cd artifacts/api-server && pnpm run build)
+echo "→ Building frontend..."
+(cd artifacts/nexora   && pnpm run build)
+echo "→ Restarting API..."
+pm2 restart nexora-api
+echo "→ Reloading Nginx..."
+nginx -t && systemctl reload nginx
+echo "✔ Update complete!"
+UPDSH
+chmod +x "${INSTALL_DIR}/update.sh"
 
-echo -e "${GREEN}${BOLD}"
-echo "  ✓  NexoraHosting is live!"
-echo -e "${RESET}"
-echo "  🌐 URL          : http://${DOMAIN}"
-echo "  🔑 Admin login  : ${ADMIN_EMAIL}"
-echo "  📁 Install dir  : ${INSTALL_DIR}"
-echo "  📜 API logs     : pm2 logs nexora-api"
-echo "  ♻️  Restart API  : pm2 restart nexora-api"
-echo "  🔄 Update site  : cd $INSTALL_DIR && bash install.sh"
+cat > "${INSTALL_DIR}/uninstall.sh" << UNSH
+#!/usr/bin/env bash
+set -euo pipefail
+echo "⚠  This will COMPLETELY remove NexoraHosting from this server."
+read -rp "Type 'yes' to confirm: " C
+[[ "\$C" == "yes" ]] || { echo "Aborted."; exit 0; }
+pm2 delete nexora-api 2>/dev/null || true
+pm2 save --force
+rm -f /etc/nginx/sites-enabled/nexorahosting
+rm -f /etc/nginx/sites-available/nexorahosting
+nginx -t && systemctl reload nginx
+sudo -u postgres psql -c "DROP DATABASE IF EXISTS ${DB_NAME};" 2>/dev/null || true
+sudo -u postgres psql -c "DROP USER     IF EXISTS ${DB_USER};" 2>/dev/null || true
+rm -rf /opt/nexorahosting
+echo "✔ NexoraHosting removed."
+UNSH
+chmod +x "${INSTALL_DIR}/uninstall.sh"
+
+# ── Final summary ─────────────────────────────────────────────────────
 echo ""
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo -e "${YELLOW}Security reminder: keep your .env file private!${RESET}"
-echo "  $INSTALL_DIR/.env"
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+hr
+echo -e "${BOLD}${GREEN}"
+echo "   ✔  NexoraHosting is installed and running!"
+echo -e "${RESET}"
+hr
+echo ""
+echo -e "  ${BOLD}🌐 Website${RESET}        http://${DOMAIN}"
+echo -e "  ${BOLD}🔑 Admin login${RESET}    ${ADMIN_EMAIL}"
+echo -e "  ${BOLD}📁 Install path${RESET}   ${INSTALL_DIR}"
+echo -e "  ${BOLD}📋 Full log${RESET}       ${LOG_FILE}"
+echo ""
+echo -e "  ${BOLD}Commands:${RESET}"
+echo -e "    ${DIM}pm2 logs nexora-api${RESET}                  ← Live logs"
+echo -e "    ${DIM}pm2 restart nexora-api${RE
