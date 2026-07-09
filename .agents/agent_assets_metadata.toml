@@ -1,0 +1,8 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "Fn4CG6c6EmGfOiYy2eio2"
+uri = "file://nexorahosting.zip"
+type = "unspecified"
+title = "NexoraHosting — Full Project ZIP"
